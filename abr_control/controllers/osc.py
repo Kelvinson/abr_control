@@ -159,13 +159,13 @@ class OSC(controller.Controller):
 
             # TODO: make sure that separate orientation and position gains
             # work with velocity limiting and without
-            u_task[3:] = -self.ko / self.kp * transformations.quaternion_multiply(
-                q_target, transformations.quaternion_conjugate(q_EE))[1:]
+            q_r = transformations.quaternion_multiply(
+                q_target, transformations.quaternion_conjugate(q_EE))
 
-            angle = q_target[0] * q_EE[0] + np.dot(q_target[1:].T, q_EE[1:])
-            # make sure that the direction we're choosing to rotate is < 180
-            if angle < 0:
-                u_task[3:] *= -1
+            # u_task[3:] = -self.ko / self.kp * np.array(
+            #     transformations.euler_from_quaternion(r, axes='rxyz'))
+
+            u_task[3:] = -self.ko / self.kp * q_r[1:] * np.sign(q_r[0])
 
         # isolate task space forces corresponding to controlled DOF
         u_task = u_task[ctrlr_dof]
@@ -205,6 +205,8 @@ class OSC(controller.Controller):
         # add in integrated error term to task space forces -------------------
         if self.ki != 0:
             # add in the integrated error term
+            # TODO: should this be just x_tilde or kp * x_tilde okay?
+            # TODO: should this be for orientation error too? probably
             self.integrated_error += x_tilde
             u_task -= self.ki * self.integrated_error
 

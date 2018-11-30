@@ -48,6 +48,9 @@ try:
         rc_angles = transformations.euler_from_matrix(rc_matrix, axes='rxyz')
         interface.set_orientation('object', rc_angles)
 
+        print('EE angles: ', np.array(transformations.euler_from_matrix(
+            robot_config.R('EE', q=feedback['q']), axes='rxyz')) * 180 / np.pi)
+
         u = ctrlr.generate(
             q=feedback['q'],
             dq=feedback['dq'],
