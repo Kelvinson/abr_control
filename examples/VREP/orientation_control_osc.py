@@ -3,7 +3,6 @@ Running operational space control using VREP. The controller will
 move the end-effector to the target object's orientation.
 """
 import numpy as np
-import pygame
 
 from abr_control.arms import ur5 as arm
 # from abr_control.arms import jaco2 as arm
@@ -15,7 +14,7 @@ from abr_control.utils import transformations
 # initialize our robot config
 robot_config = arm.Config(use_cython=True)
 # create opreational space controller
-ctrlr = OSC(robot_config, kp=500)
+ctrlr = OSC(robot_config, kp=200, ko=200)
 
 # create our interface
 interface = VREP(robot_config, dt=.005)
@@ -30,7 +29,6 @@ ctrlr_dof = [False, False, False, True, True, True]
 
 
 try:
-    count = 0
     print('\nSimulation starting...\n')
     while 1:
         # get arm feedback
@@ -41,15 +39,9 @@ try:
             interface.get_xyz('target'),
             interface.get_orientation('target')])
 
-        vrep_angles = interface.get_orientation('UR5_link6')
-        vrep_R = transformations.euler_matrix(
-            vrep_angles[0], vrep_angles[1], vrep_angles[2], 'rxyz')
         rc_matrix = robot_config.R('EE', feedback['q'])
         rc_angles = transformations.euler_from_matrix(rc_matrix, axes='rxyz')
         interface.set_orientation('object', rc_angles)
-
-        print('EE angles: ', np.array(transformations.euler_from_matrix(
-            robot_config.R('EE', q=feedback['q']), axes='rxyz')) * 180 / np.pi)
 
         u = ctrlr.generate(
             q=feedback['q'],
@@ -65,7 +57,6 @@ try:
         ee_angles_track.append(transformations.euler_from_matrix(
             robot_config.R('EE', feedback['q'])))
         target_angles_track.append(interface.get_orientation('target'))
-        count += 1
 
 finally:
     # stop and reset the simulation
@@ -79,7 +70,6 @@ finally:
     if ee_angles_track.shape[0] > 0:
         # plot distance from target and 3D trajectory
         import matplotlib.pyplot as plt
-        from abr_control.utils.plotting import plot_3D
 
         plt.figure()
         plt.plot(ee_angles_track)
