@@ -49,7 +49,9 @@ class OSC(controller.Controller):
 
         self.kp = kp
         self.ko = kp if ko is None else ko
-        self.kv = np.sqrt(self.kp) if kv is None else kv
+        # TODO: find the appropriate default critical damping value
+        # when using different position and orientation gains
+        self.kv = np.sqrt(kp+ko) if kv is None else kv
         self.ki = ki
         self.vmax = vmax
         self.lamb = self.kp / self.kv
@@ -134,38 +136,38 @@ class OSC(controller.Controller):
         if np.sum(ctrlr_dof[:3]) > 0:
             # calculate the end-effector position information
             xyz = self.robot_config.Tx(ref_frame, q, x=xyz_offset)
-            u_task[:3] = np.array(xyz - target[:3])
+            u_task[:3] = xyz - target[:3]
 
         # calculate orientation error if orientation is being controlled
         if np.sum(ctrlr_dof[3:]) > 0:
 
-            # TODO: figure out if this is a good idea or not            !!!!!!
-            # calculate the current end effector Euler angles
-            # replace the non-controlled target orientation angles with
-            # the current orientation angles to minimize distance travelled
-            # if np.sum(ctrlr_dof[3:]) < 3:
-            #     R_EE = self.robot_config.R('EE', q)
-            #     angles = np.array(
-            #         transformations.euler_from_matrix(R_EE, axes='rxyz'))
-            #     target[3:][not ctrlr_dof[3:]] = angles[not ctrlr_dof[3:]]
-            #
+            # Method 1 --------------------------------------------------------
             # transform the orientation target into a quaternion
-            q_target = transformations.quaternion_from_euler(
-                    target[3], target[4], target[5], axes='rxyz')
-
+            q_d = transformations.unit_vector(
+                transformations.quaternion_from_euler(
+                    target[3], target[4], target[5], axes='rxyz'))
             # get the quaternion for the end effector
-            q_EE = transformations.quaternion_from_matrix(
-                self.robot_config.R('EE', q))
-
+            q_e = transformations.unit_vector(
+                transformations.quaternion_from_matrix(
+                    self.robot_config.R('EE', q)))
             # TODO: make sure that separate orientation and position gains
             # work with velocity limiting and without
             q_r = transformations.quaternion_multiply(
-                q_target, transformations.quaternion_conjugate(q_EE))
-
-            # u_task[3:] = -self.ko / self.kp * np.array(
-            #     transformations.euler_from_quaternion(r, axes='rxyz'))
-
+                q_d, transformations.quaternion_conjugate(q_e))
             u_task[3:] = -self.ko / self.kp * q_r[1:] * np.sign(q_r[0])
+
+            # # Method 2 --------------------------------------------------------
+            # # From (Caccavale et al, 1997) Section IV Quaternion feedback -----
+            # # get rotation matrix for the end effector orientation
+            # R_e = self.robot_config.R('EE', q)
+            # # get rotation matrix for the target orientation
+            # R_d = transformations.euler_matrix(
+            #     target[3], target[4], target[5], axes='rxyz')[:3, :3]
+            # R_ed = np.dot(R_e.T, R_d)  # eq 24
+            # q_ed = transformations.unit_vector(
+            #     transformations.quaternion_from_matrix(R_ed))
+            # u_task[3:] = -self.ko / self.kp * np.dot(R_e, q_ed[1:])  # eq 34
+
 
         # isolate task space forces corresponding to controlled DOF
         u_task = u_task[ctrlr_dof]
