@@ -18,7 +18,7 @@ from abr_control.utils.paths import cache_dir
 from abr_control.utils import DataHandler
 from abr_control.controllers import path_planners
 
-class ProcessData():
+class DataProcessor():
     def __init__(self):
         """
 
