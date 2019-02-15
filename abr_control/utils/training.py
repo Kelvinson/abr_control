@@ -326,7 +326,7 @@ class Training:
 
         intercepts = signals.AreaIntercepts(
             dimensions=n_input,
-            base=signals.Triangular(-0.9, -0.9, 0.0))
+            base=signals.Triangular(-0.7, -0.6, -0.5))
 
         rng = np.random.RandomState(seed)
         intercepts = intercepts.sample(n_neurons, rng=rng)
@@ -758,15 +758,14 @@ class Training:
                     print('Increasing threshold to %.4f' %thresh)
                 prev_index = n_indices
 
-            first_time = True
-            while (input_signal.shape[0] != n_neurons):
-                if first_time:
-                    print('Too many indices removed, appending random entries to'
-                            + ' match dimensionality')
-                    print('shape: ', input_signal.shape)
-                first_time = False
-                row = np.random.randint(input_signal.shape[0])
-                input_signal = np.vstack((input_signal, input_signal[row]))
+            if input_signal.shape[0] != n_neurons:
+                import nengolib
+                print('Too many indices removed, appending with uniform hypersphere')
+                print('shape: ', input_signal.shape)
+                length = n_neurons - input_signal.shape[0]
+                hypersphere = nengolib.stats.ScatteredHypersphere(surface=True)
+                hyper_inputs = hypersphere.sample(length, input_signal.shape[1])
+                input_signal = np.vstack((input_signal, hyper_inputs))
 
             print(input_signal.shape)
             print('thresh: ', thresh)

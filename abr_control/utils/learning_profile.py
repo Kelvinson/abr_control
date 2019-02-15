@@ -67,80 +67,81 @@ class LearningProfile:
         plt.xlabel('Time [sec]')
         plt.title('Spiking Activity')
 
-    def plot_prop_active_neurons_over_time(self, network, input_signal, ax, thresh=None):
+    def prop_active_neurons_over_time(self, network, input_signal, ax=None, thresh=None):
         '''
         Accepts a Nengo network and checks the tuning curve responses to the input signal
-        Plots the proportion of active neurons vs run time onto the ax object
-        Returns the proportion active and the activities
+        Plots the proportion of active neurons vs run time onto the ax object if provided
+        Returns the proportion active and the activities if ax is None
 
         PARAMETERS
         ----------
         network: a Nengo network object
         input_signal: [time x input_dim] list
             the input used for the network sim
-        ax: ax object
-            used for the rasterplot
+        ax: ax object, Optional (Default: None)
+            if None then the prop active and activities will be returned
+            if provided will plot onto ax
         thresh: float, Optional (Default: None)
             the values above and below which activities get set to 1 and 0, respectively
             When None, the default of the function will be used
         '''
         time = np.ones(len(input_signal))
         activities = self.get_activities(network=network, input_signal=input_signal)
+
         proportion_active = []
         for activity in activities:
             # axis=0 mean over time
             # axis=1 mean over neurons
             # len(activity.T) gives the number of neurons
             proportion_active.append(np.sum(activity, axis=1)/len(activity.T))
-
         proportion_active = np.sum(proportion_active,
                 axis=0)/len(proportion_active)
 
-        print('Plotting proportion of active neurons over time...')
-        ax.plot(np.cumsum(time), proportion_active, label='proportion active')
+        if ax is not None:
+            print('Plotting proportion of active neurons over time...')
+            ax.plot(np.cumsum(time), proportion_active, label='proportion active')
 
-        ax.set_title('Proportion of active neurons over time')
-        ax.set_ylabel('Proportion Active')
-        ax.set_xlabel('Time [sec]')
-        ax.set_ylim(0, 1)
-        plt.legend()
-        return(proportion_active, activities)
+            ax.set_title('Proportion of active neurons over time')
+            ax.set_ylabel('Proportion Active')
+            ax.set_xlabel('Time [sec]')
+            ax.set_ylim(0, 1)
+            plt.legend()
 
-    def plot_prop_time_neurons_active(self, network, input_signal, ax, thresh=None):
+        else:
+            return(proportion_active, activities)
+
+    def prop_time_neurons_active(self, network, input_signal, ax=None, thresh=None):
         '''
         Accepts a Nengo network and checks the tuning curves response to the input signal
         Plots the the number of active neurons vs proportion of run time onto the ax object
-        Returns the time active and the activities
+        if provided, otherwise Returns the time active and the activities
 
         PARAMETERS
         ----------
         network: a Nengo network object
         input_signal: [time x input_dim] list
             the input used for the network sim
-        ax: ax object
-            used for the rasterplot
+        ax: ax object, Optional (Default: None)
+            if None then the prop active and activities will be returned
+            if provided will plot onto ax
         thresh: float, Optional (Default: None)
             the values above and below which activities get set to 1 and 0, respectively
             When None, the default of the function will be used
         '''
         time = np.ones(len(input_signal))
         activities = self.get_activities(network=network, input_signal=input_signal)
+
         time_active = []
         for activity in activities:
             # axis=0 mean over time
             # axis=1 mean over neurons
             # len(activity.T) gives the number of neurons
             time_active.append(np.sum(activity, axis=0)/len(activity))
-
-        print('Plotting proportion of active time...')
         time_active = np.hstack(time_active)
-        plt.hist(time_active, bins=np.linspace(0,1,100))
-        ax.set_ylabel('Number of active neurons')
-        ax.set_xlabel('Proportion of Time')
 
         num_inactive = 0
         num_active = 0
-        times_neuron_fires = []
+
         for ens in activities:
             ens = ens.T
             for nn, neuron in enumerate(ens):
@@ -148,12 +149,21 @@ class LearningProfile:
                     num_inactive += 1
                 else:
                     num_active += 1
-                times_neuron_fires.append(np.sum(ens[nn]))
-        ax.set_title('Proportion of time neurons are active\n'
-            + 'Active: %i,  Inactive: %i'%(num_active, num_inactive))
         print('Number of neurons inactive: ', num_inactive)
         print('Number of neurons active: ', num_active)
-        return (time_active, activities)
+
+        if ax is not None:
+            ax = plt.subplot(111)
+            plt.hist(time_active, bins=np.linspace(0,1,100))
+            ax.set_ylabel('Number of active neurons')
+            ax.set_xlabel('Proportion of Time')
+            ax.set_title('Proportion of time neurons are active\n'
+                + 'Active: %i,  Inactive: %i'%(num_active, num_inactive))
+            plt.show()
+            fig = []
+            ax = []
+        else:
+            return (time_active, activities)
 
     def get_activities(self, network, input_signal, thresh=1e-5):
         '''
@@ -214,13 +224,13 @@ class LearningProfile:
                 ax=ax[0],
                 num_ens_to_raster=num_ens_to_raster)
 
-        self.plot_prop_active_neurons_over_time(
+        self.prop_active_neurons_over_time(
                 network=network,
                 input_signal=input_signal,
                 ax=ax[1],
                 thresh=thresh)
 
-        self.plot_prop_time_neurons_active(
+        self.prop_time_neurons_active(
                 network=network,
                 input_signal=input_signal,
                 ax=ax[2],

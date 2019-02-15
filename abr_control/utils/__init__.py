@@ -10,3 +10,4 @@ import abr_control.utils.make_gif
 import abr_control.utils.plot_velocity_profile
 import abr_control.utils.plot_torque_profile
 from .learning_profile import LearningProfile
+from .ideal_intercepts import IdealIntercepts

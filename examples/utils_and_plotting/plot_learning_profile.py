@@ -290,6 +290,20 @@ else:
     if use_spherical:
         input_signal = convert_to_spherical(input_signal)
 
+# from abr_control.utils import IdealIntercepts
+# ideal = IdealIntercepts()
+# ideal.run_intercept_scan(
+#     n_input=n_input,
+#     n_output=n_output,
+#     n_neurons=n_neurons,
+#     n_ensembles=n_ensembles,
+#     pes_learning_rate=1e-6,
+#     backend=backend,
+#     seed=seed,
+#     neuron_type=neuron_type,
+#     encoders=encoders,
+#     input_signal=input_signal)
+
 network = signals.DynamicsAdaptation(
     n_input=n_input,
     n_output=n_output,
