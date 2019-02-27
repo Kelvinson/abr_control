@@ -15,7 +15,7 @@ if [[ "$COMMAND" == "install" ]]; then
 elif [[ "$COMMAND" == "script" ]]; then
     exe coverage run -m pytest -v -n 2 --color=yes --durations 20 abr_control
     coverage report -m
-elif [[ "$COMMAND" == "after_script"]]; then
+elif [[ "$COMMAND" == "after_script" ]]; then
     exe eval "bash <(curl -s https://codecov.io/bash)"
 elif [[ -z "$COMMAND" ]]; then
     echo "$NAME requires a command like 'install' or 'script'"
